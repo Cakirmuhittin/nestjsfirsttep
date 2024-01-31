@@ -1,16 +1,28 @@
-import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req, Res, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Request, Response, response } from 'express';
 import { CreateUserDto } from 'src/users/dtos/CreateUser.dto';
+import { AuthGuard } from 'src/users/guards/auth/auth.guard';
+import { ValidateCreateUserPipe } from 'src/users/pipes/validate-create-user/validate-create-user.pipe';
+import { UsersService } from 'src/users/services/users/users.service';
 
 
 @Controller('users')
+// @UseGuards(AuthGuard)
 export class UsersController {
 
-    @Get()
-    getUsers() {
-        return { username: 'Anson', email: 'anson@anson.com' };
+    constructor(private userService: UsersService) {
     }
 
+    // @Get()
+    // getUsers(@Query('sortDesc',ParseBoolPipe) sortDesc:boolean) {      
+    //     return { username: 'Anson', email: 'anson@anson.com' };
+    // }
+
+    @Get()
+    @UseGuards(AuthGuard)
+    getUsers() {
+        return this.userService.fetchUsers();
+    }
     @Get('posts')
     getUsersPosts() {
         return [{
@@ -43,15 +55,30 @@ export class UsersController {
     //   console.log(request.body); 
     //   response.send('Created');
     // }
+
+
     @Post('create')
-    createUser(@Body() userData: CreateUserDto) {
-        console.log(userData);
-        return {}
+    @UsePipes(new ValidationPipe())
+    createUser(@Body(ValidateCreateUserPipe) userData: CreateUserDto) {
+        console.log(userData.age.toPrecision());
+        return this.userService.createUser(userData);
+
     }
 
-    @Get(':id/:postId')
-    getUserById(@Param('id') id:string , @Param('postId') postId:string) {
+
+    // @Get(':id/:postId')
+    // getUserById(@Param('id') id: string, @Param('postId') postId: string) {
+    //     console.log(id);
+    //     return { id, postId }
+    // }
+    @Get(':id')
+    getUserByIds(@Param('id', ParseIntPipe) id: number,) {
         console.log(id);
-        return { id,postId } 
+        return { id }
+    }
+
+    @Get(':id')
+    getUserById(@Param('id', ParseIntPipe) id: number) {
+        return this.userService.fetchUserById(id);
     }
 }
